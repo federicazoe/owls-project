@@ -1,0 +1,94 @@
+---
+title: "Median house prices vs. income"
+output: html_document
+---
+
+```{r}
+#| message: false
+#| echo: false
+library(tidyverse, quietly = TRUE)
+library(scales)
+```
+
+# Meet your neighbor (2 min)
+
+Tell your neighbour your name, and something you've been enjoying this semester (academic or life).
+
+# Load your sample
+
+You will draw a random sample of 100 house blocks unique to you, based on your birthday.
+
+In the code chunk below, enter your month, day and year of birth. If you were born on Jan 2, 2005 enter: mm = 1, dd = 2, yy = 2005.
+
+```{r load_data}
+
+mm = "your month of birth"
+dd = "your day of birth"
+yy = "your year of birth"
+
+set.seed(as.numeric(paste0(mm, dd, yy)))
+sample_house_blocks <- read_csv("house_price_data.csv") |> 
+  sample_n(100)
+
+```
+
+Next, run the following code to visualize the house blocks of your random sample.
+
+```{r}
+sample_house_blocks |> 
+  ggplot() +
+  aes(x = median_house_value, y = median_income) +
+  geom_point() +
+  labs(y = "median income", x = "median house value") +
+  scale_y_continuous(labels = dollar_format(scale = .01, suffix = "K")) +
+    scale_x_continuous(labels = dollar_format(scale = .001, suffix = "K"))
+
+```
+
+Briefly compare with your neighbor's observations. By looking at the plot, which one of you has more observations with a high median house value?
+
+# Fit linear regression line
+
+Run the following code to fit a linear regression line.
+
+```{r pressure, echo=FALSE}
+model_housing <- lm(median_income ~ median_house_value, 
+                    data = sample_house_blocks)
+model_housing$coefficients |> round(4)
+```
+
+
+Plot the linear regression line by running the following chunk. 
+
+```{r}
+
+sample_house_blocks |> 
+  ggplot() +
+  aes(y = median_income, x = median_house_value) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(y = "median income", x = "median house value") +
+  scale_y_continuous(labels = dollar_format(scale = .01, suffix = "K")) +
+    scale_x_continuous(labels = dollar_format(scale = .001, suffix = "K"))
+
+```
+
+# Confidence interval for beta 1
+
+```{r}
+
+beta_hat_1 =  model_housing$coefficients[2]
+t_cutoff = qt(0.975, df = nrow(sample_house_blocks) - 2)
+
+se = summary(model_housing)$coefficients[2,]["Std. Error"]
+
+ci_low <- (beta_hat_1 - t_cutoff * se) |> round(4)
+ci_high <- (beta_hat_1 + t_cutoff * se) |> round(4)
+
+print(paste("Lower bound is", ci_low))
+print(paste("Upper bound is", ci_high))
+```
+
+Add your confidence interval lower and upper bounds to the next available line in this spreadsheet: bit.ly/owls-confidence
+
+
